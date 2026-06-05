@@ -1,0 +1,15 @@
+{
+  "name": "banrixian",
+  "version": "1.0.0",
+  "description": "半日闲 — 偷得浮生半日闲",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.0"
+  }
+}

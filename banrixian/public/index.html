@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>半日闲 — 偷得浮生半日闲</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=ZCOOL+XiaoWei&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1814;--ink2:#4a4640;--ink3:#8a8580;
+  --paper:#f5f2eb;--paper2:#ede9e0;--paper3:#e4dfd3;
+  --accent:#8b4513;--accent2:#c4611f;--accent-light:#f0dcc8;
+  --green:#2d5a27;--green-light:#e8f0e6;
+  --red:#8b1a1a;--red-light:#f5e6e6;
+  --border:#d4cfc4;--border2:#c8c2b5;
+  --radius:8px;--radius-lg:12px;
+  --shadow:0 2px 8px rgba(26,24,20,0.08);--shadow-lg:0 8px 32px rgba(26,24,20,0.16);
+  --font-serif:'Noto Serif SC',serif;--font-display:'ZCOOL XiaoWei','Noto Serif SC',serif;--font-mono:'IBM Plex Mono',monospace;
+}
+body{font-family:var(--font-serif);background:var(--paper);color:var(--ink);min-height:100vh;overflow:hidden}
+
+/* BOSS MODE */
+body.boss-mode #app{display:none!important}
+#boss-overlay{display:none;position:fixed;inset:0;z-index:9999;background:#fff;flex-direction:column}
+body.boss-mode #boss-overlay{display:flex}
+#boss-tabs{display:flex;background:#f0f0f0;border-bottom:1px solid #ccc}
+.b-tab{padding:8px 16px;font-size:13px;border:none;background:none;cursor:pointer;font-family:Arial;color:#333;border-right:1px solid #ccc}
+.b-tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px}
+#boss-content{flex:1;overflow:auto;padding:16px;font-family:Arial}
+.excel-grid{border-collapse:collapse;font-size:12px;width:100%}
+.excel-grid th{background:#e8e8e8;border:1px solid #bbb;padding:3px 8px;text-align:center;font-weight:normal;min-width:60px}
+.excel-grid td{border:1px solid #d0d0d0;padding:2px 6px;font-size:12px;min-width:80px}
+.excel-grid td:first-child{background:#e8e8e8;text-align:center;min-width:30px}
+.excel-sel{background:#cce8ff!important;outline:2px solid #0078d4;outline-offset:-1px}
+#boss-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#217346;color:#fff;font-family:Arial;font-size:13px}
+#boss-formula{flex:1;background:#fff;color:#000;border:none;padding:2px 6px;font-size:12px}
+#boss-close{margin-left:auto;background:#fff3;border:1px solid rgba(255,255,255,0.4);color:#fff;padding:4px 12px;cursor:pointer;border-radius:3px;font-size:12px;font-family:Arial}
+
+/* LAYOUT */
+#app{width:100vw;height:100vh;display:flex;flex-direction:column}
+.screen{display:none;flex:1;overflow:hidden}
+.screen.active{display:flex;flex-direction:column}
+
+/* TOPBAR */
+#topbar{display:flex;align-items:center;padding:12px 20px;background:var(--paper);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
+#topbar-logo{font-family:var(--font-display);font-size:20px;color:var(--accent);letter-spacing:2px;cursor:pointer}
+#topbar-logo span{font-size:12px;color:var(--ink3);display:block;letter-spacing:0.5px;font-family:var(--font-serif);font-weight:400;margin-top:-2px}
+#topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-family:var(--font-serif);font-size:14px;cursor:pointer;border:1px solid var(--border);background:var(--paper2);color:var(--ink);transition:all 0.15s}
+.btn:hover{background:var(--paper3);border-color:var(--border2)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--accent2);border-color:var(--accent2)}
+.btn-danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn-danger:hover{background:#a02020}
+.btn-boss{background:var(--green);border-color:var(--green);color:#fff;font-size:13px}
+.btn-boss:hover{background:#3a7332}
+.btn-sm{padding:4px 10px;font-size:13px}
+
+/* LOBBY */
+#lobby{padding:0 20px 20px;overflow-y:auto;flex:1}
+.lobby-hero{padding:28px 0 20px;text-align:center}
+.lobby-hero h1{font-family:var(--font-display);font-size:36px;color:var(--accent);letter-spacing:4px;margin-bottom:8px}
+.lobby-hero p{color:var(--ink3);font-size:15px;letter-spacing:1px}
+.lobby-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;max-width:900px;margin:0 auto}
+.room-card{background:var(--paper2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.room-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);opacity:0.4;transition:opacity 0.2s}
+.room-card:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-1px)}
+.room-card:hover::before{opacity:1}
+.room-name{font-size:16px;font-weight:600;margin-bottom:6px}
+.room-meta{font-size:12px;color:var(--ink3);display:flex;gap:12px}
+.room-badge{font-size:11px;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:8px}
+.lobby-section-title{font-size:13px;color:var(--ink3);letter-spacing:2px;margin:20px 0 12px;text-align:center;display:flex;align-items:center;gap:12px}
+.lobby-section-title::before,.lobby-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:440px;box-shadow:var(--shadow-lg)}
+.modal h2{font-family:var(--font-display);font-size:20px;color:var(--accent);margin-bottom:20px;letter-spacing:1px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;letter-spacing:0.5px}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--paper2);color:var(--ink);font-family:var(--font-serif);font-size:14px;outline:none;transition:border-color 0.15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:none;height:72px}
+.radio-group{display:flex;gap:8px}
+.radio-opt{flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:13px;transition:all 0.15s}
+.radio-opt:hover{border-color:var(--accent)}
+.radio-opt input{accent-color:var(--accent)}
+.radio-opt.selected{border-color:var(--accent);background:var(--accent-light)}
+.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
+
+/* CHAT */
+#chat-screen{flex-direction:row}
+#sidebar{width:220px;flex-shrink:0;background:var(--paper2);border-right:1px solid var(--border);display:flex;flex-direction:column}
+#sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+#room-title{font-family:var(--font-display);font-size:16px;color:var(--accent);letter-spacing:1px;word-break:break-all}
+#room-id-display{font-size:11px;color:var(--ink3);font-family:var(--font-mono);margin-top:3px;cursor:pointer}
+#sidebar-members{flex:1;overflow-y:auto;padding:10px 0}
+.sidebar-section{padding:4px 14px 2px;font-size:11px;color:var(--ink3);letter-spacing:2px;margin-top:8px}
+.member-item{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:13px}
+.member-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent);flex-shrink:0;font-weight:600}
+.member-name{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.host-tag{font-size:10px;color:var(--accent);margin-left:4px;background:var(--accent-light);padding:1px 5px;border-radius:10px}
+#sidebar-actions{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+
+#chat-main{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat-header{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--paper)}
+#chat-header-info{flex:1}
+#chat-room-name{font-weight:600;font-size:15px;letter-spacing:0.5px}
+#chat-room-status{font-size:12px;color:var(--ink3);margin-top:1px}
+
+#messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:10px;animation:msgIn 0.2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg.self{flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--paper3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--ink2);flex-shrink:0}
+.msg-body{max-width:65%}
+.msg-meta{font-size:11px;color:var(--ink3);margin-bottom:3px}
+.msg.self .msg-meta{text-align:right}
+.msg-bubble{padding:9px 13px;border-radius:12px;background:var(--paper2);border:1px solid var(--border);font-size:14px;line-height:1.6;word-break:break-word}
+.msg.self .msg-bubble{background:var(--accent-light);border-color:var(--accent)}
+.msg-bubble img{max-width:100%;border-radius:8px;margin-top:4px;display:block}
+.sys-msg{text-align:center;font-size:12px;color:var(--ink3);padding:4px}
+.sys-msg span{background:var(--paper3);padding:3px 12px;border-radius:20px;border:1px solid var(--border)}
+
+#chat-input-area{padding:12px 18px;border-top:1px solid var(--border);background:var(--paper);flex-shrink:0}
+#chat-toolbar{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.toolbar-btn{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--ink2);font-family:var(--font-serif);transition:all 0.15s}
+.toolbar-btn:hover{background:var(--paper3);border-color:var(--border2)}
+#chat-input-row{display:flex;gap:10px;align-items:flex-end}
+#chat-input{flex:1;border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-family:var(--font-serif);font-size:14px;background:var(--paper2);color:var(--ink);outline:none;resize:none;max-height:120px;min-height:40px;transition:border-color 0.15s;line-height:1.5}
+#chat-input:focus{border-color:var(--accent)}
+.enc-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--green);background:var(--green-light);padding:3px 10px;border-radius:20px;border:1px solid #c0d8bc}
+
+/* WS STATUS */
+#ws-status{font-size:11px;padding:3px 8px;border-radius:10px;font-family:var(--font-mono)}
+#ws-status.ok{background:var(--green-light);color:var(--green)}
+#ws-status.err{background:var(--red-light);color:var(--red)}
+#ws-status.connecting{background:var(--accent-light);color:var(--accent)}
+
+/* TOAST */
+#toast-container{position:fixed;top:16px;right:16px;z-index:9000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:var(--radius);font-size:13px;font-family:var(--font-serif);animation:toastIn 0.2s ease;max-width:300px;box-shadow:var(--shadow-lg)}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+#img-input{display:none}
+.img-preview{margin-top:8px;position:relative;display:inline-block}
+.img-preview img{max-height:100px;border-radius:8px;border:1px solid var(--border)}
+.img-preview-remove{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- BOSS MODE -->
+<div id="boss-overlay">
+  <div id="boss-bar">
+    <span style="font-family:Arial;font-weight:bold">📊</span>
+    <span style="font-family:Arial;font-size:13px">Microsoft Excel — Q4_财务数据.xlsx</span>
+    <input id="boss-formula" value="=SUM(B2:B13)" readonly style="flex:1;background:#fff;color:#000;border:none;padding:2px 6px;font-size:12px">
+    <button id="boss-close" onclick="exitBossMode()">🚨 老板走了</button>
+  </div>
+  <div id="boss-tabs">
+    <button class="b-tab active">Sheet1</button>
+    <button class="b-tab">Sheet2</button>
+    <button class="b-tab">汇总</button>
+    <span style="flex:1"></span>
+  </div>
+  <div id="boss-content">
+    <table class="excel-grid">
+      <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+      <tr><td>1</td><td style="background:#e8e8e8;font-weight:bold">月份</td><td style="background:#e8e8e8;font-weight:bold">销售额</td><td style="background:#e8e8e8;font-weight:bold">成本</td><td style="background:#e8e8e8;font-weight:bold">利润</td><td style="background:#e8e8e8;font-weight:bold">同比%</td><td></td></tr>
+      <tr><td>2</td><td>1月</td><td>1,234,500</td><td>876,300</td><td>358,200</td><td style="color:#2d5a27">+12.3%</td><td></td></tr>
+      <tr><td>3</td><td>2月</td><td>987,200</td><td>654,100</td><td>333,100</td><td style="color:#8b1a1a">-4.1%</td><td></td></tr>
+      <tr><td>4</td><td>3月</td><td>1,456,800</td><td>923,400</td><td>533,400</td><td style="color:#2d5a27">+18.7%</td><td></td></tr>
+      <tr><td>5</td><td>4月</td><td>1,123,400</td><td>789,600</td><td>333,800</td><td style="color:#2d5a27">+5.2%</td><td></td></tr>
+      <tr><td>6</td><td>5月</td><td>1,678,900</td><td>1,034,500</td><td>644,400</td><td style="color:#2d5a27">+22.1%</td><td></td></tr>
+      <tr><td>7</td><td>6月</td><td>1,345,600</td><td>867,200</td><td>478,400</td><td style="color:#2d5a27">+9.8%</td><td></td></tr>
+      <tr><td>8</td><td>7月</td><td>1,567,300</td><td>998,700</td><td>568,600</td><td style="color:#2d5a27">+14.3%</td><td></td></tr>
+      <tr><td>9</td><td>8月</td><td>1,234,500</td><td>823,100</td><td>411,400</td><td style="color:#8b1a1a">-2.7%</td><td></td></tr>
+      <tr><td>10</td><td>9月</td><td>1,890,200</td><td>1,123,400</td><td>766,800</td><td style="color:#2d5a27">+28.4%</td><td></td></tr>
+      <tr><td>11</td><td>10月</td><td>1,678,400</td><td>1,034,200</td><td>644,200</td><td style="color:#2d5a27">+16.9%</td><td></td></tr>
+      <tr><td>12</td><td>11月</td><td>2,134,600</td><td>1,345,700</td><td>788,900</td><td style="color:#2d5a27">+31.2%</td><td></td></tr>
+      <tr><td>13</td><td>12月</td><td class="excel-sel">2,456,800</td><td>1,567,300</td><td>889,500</td><td style="color:#2d5a27">+38.7%</td><td></td></tr>
+      <tr><td>14</td><td style="font-weight:bold">合计</td><td style="font-weight:bold">18,788,200</td><td style="font-weight:bold">12,037,600</td><td style="font-weight:bold">6,750,700</td><td></td><td></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div id="topbar">
+    <div id="topbar-logo" onclick="goLobby()">
+      半日闲
+      <span>偷得浮生半日闲</span>
+    </div>
+    <div id="topbar-actions">
+      <button class="btn btn-boss" onclick="enterBossMode()">👔 老板来了</button>
+      <button class="btn btn-primary" onclick="openCreateModal()">＋ 创建房间</button>
+      <button class="btn" onclick="openJoinModal()">进入房间</button>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobby-screen" class="screen active">
+    <div id="lobby">
+      <div class="lobby-hero">
+        <h1>半日闲</h1>
+        <p>发个链接，拉几个人，聊完即散。</p>
+      </div>
+      <div class="lobby-section-title">公开房间</div>
+      <div class="lobby-grid" id="lobby-rooms">
+        <div style="grid-column:1/-1;text-align:center;color:var(--ink3);padding:40px 0;font-size:14px">加载中…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat-screen" class="screen">
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <div id="room-title">—</div>
+        <div id="room-id-display" onclick="copyRoomLink()" title="点击复制链接" style="cursor:pointer"></div>
+      </div>
+      <div id="sidebar-members">
+        <div class="sidebar-section">在线成员</div>
+        <div id="member-list"></div>
+      </div>
+      <div id="sidebar-actions">
+        <div class="enc-badge">🔐 端对端加密</div>
+        <button class="btn btn-sm" onclick="copyRoomLink()">📋 复制邀请链接</button>
+        <button class="btn btn-sm btn-danger" id="destroy-btn" style="display:none" onclick="confirmDestroy()">销毁房间</button>
+        <button class="btn btn-sm" onclick="leaveRoom()">离开房间</button>
+      </div>
+    </div>
+    <div id="chat-main">
+      <div id="chat-header">
+        <div id="chat-header-info">
+          <div id="chat-room-name"></div>
+          <div id="chat-room-status"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="ws-status" class="connecting">连接中</span>
+          <button class="btn btn-sm btn-boss" onclick="enterBossMode()">👔 老板来了</button>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <div id="chat-input-area">
+        <div id="chat-toolbar">
+          <button class="toolbar-btn" onclick="document.getElementById('img-input').click()">🖼 图片</button>
+          <button class="toolbar-btn" onclick="insertEmoji('😂')">😂</button>
+          <button class="toolbar-btn" onclick="insertEmoji('👍')">👍</button>
+          <button class="toolbar-btn" onclick="insertEmoji('😅')">😅</button>
+          <button class="toolbar-btn" onclick="insertEmoji('🤣')">🤣</button>
+          <button class="toolbar-btn" onclick="insertEmoji('🔥')">🔥</button>
+          <button class="toolbar-btn" onclick="insertEmoji('💀')">💀</button>
+        </div>
+        <div id="img-preview-area"></div>
+        <input type="file" id="img-input" accept="image/*" onchange="handleImageSelect(event)">
+        <div id="chat-input-row">
+          <textarea id="chat-input" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="handleInputKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="btn btn-primary" onclick="sendMessage()">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <h2>创建房间</h2>
+    <div class="field"><label>你的昵称</label><input id="create-nickname" placeholder="偷闲者" maxlength="20"></div>
+    <div class="field"><label>房间名称</label><input id="create-room-name" placeholder="市场部吐槽大会" maxlength="30"></div>
+    <div class="field"><label>房间密码（用于加密，请牢记）</label><input id="create-password" type="password" placeholder="至少4位"></div>
+    <div class="field"><label>房间介绍（可选）</label><textarea id="create-desc" placeholder="今晚开黑…"></textarea></div>
+    <div class="field">
+      <label>历史记录</label>
+      <div class="radio-group">
+        <label class="radio-opt selected" id="mode-keep-label"><input type="radio" name="rec-mode" value="keep" checked onchange="selectMode('keep')"> 保留记录</label>
+        <label class="radio-opt" id="mode-destroy-label"><input type="radio" name="rec-mode" value="destroy" onchange="selectMode('destroy')"> 聊完即删</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>房间可见性</label>
+      <div class="radio-group">
+        <label class="radio-opt selected" id="vis-public-label"><input type="radio" name="vis-mode" value="public" checked onchange="selectVis('public')"> 公开大厅</label>
+        <label class="radio-opt" id="vis-hidden-label"><input type="radio" name="vis-mode" value="hidden" onchange="selectVis('hidden')"> 仅链接进入</label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('create-modal')">取消</button>
+      <button class="btn btn-primary" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN MODAL -->
+<div class="modal-overlay" id="join-modal">
+  <div class="modal">
+    <h2>进入房间</h2>
+    <div class="field"><label>你的昵称</label><input id="join-nickname" placeholder="偷闲者" maxlength="20"></div>
+    <div class="field"><label>房间 ID</label><input id="join-room-id" placeholder="6位房间码" maxlength="6" style="text-transform:uppercase;letter-spacing:2px;font-family:var(--font-mono)"></div>
+    <div class="field"><label>房间密码（向房主索取）</label><input id="join-password" type="password" placeholder="密码"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('join-modal')">取消</button>
+      <button class="btn btn-primary" onclick="joinRoom()">进入</button>
+    </div>
+  </div>
+</div>
+
+<!-- DESTROY CONFIRM -->
+<div class="modal-overlay" id="destroy-modal">
+  <div class="modal">
+    <h2 style="color:var(--red)">销毁房间</h2>
+    <p style="color:var(--ink2);font-size:14px;line-height:1.7;margin-bottom:20px">所有消息和图片将<strong>立即永久删除</strong>，所有成员同时被踢出，不可恢复。</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('destroy-modal')">取消</button>
+      <button class="btn btn-danger" onclick="doDestroy()">确认销毁</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ── Crypto (AES-256-GCM, PBKDF2) ────────────────────────────────────────────
+const ENC = {
+  async deriveKey(password, salt) {
+    const e = new TextEncoder();
+    const raw = await crypto.subtle.importKey('raw', e.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: e.encode(salt), iterations: 100000, hash: 'SHA-256' },
+      raw, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    );
+  },
+  async encrypt(text, password, roomId) {
+    const key = await this.deriveKey(password, roomId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    const combined = new Uint8Array(iv.length + cipher.byteLength);
+    combined.set(iv); combined.set(new Uint8Array(cipher), iv.length);
+    return btoa(String.fromCharCode(...combined));
+  },
+  async decrypt(b64, password, roomId) {
+    try {
+      const key = await this.deriveKey(password, roomId);
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(0, 12) }, key, bytes.slice(12));
+      return new TextDecoder().decode(plain);
+    } catch { return '[无法解密—密码不匹配]'; }
+  }
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let ws = null;
+let reconnectTimer = null;
+let currentRoom = null;   // room object from server
+let currentNick = null;
+let currentPassword = null;
+let isHost = false;
+let pendingJoin = null;   // { roomId, nick, password } for after ws connects
+
+// ── WebSocket ────────────────────────────────────────────────────────────────
+function getWsUrl() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${proto}://${location.host}`;
+}
+
+function connectWs(onOpen) {
+  if (ws && ws.readyState < 2) { if (onOpen) onOpen(); return; }
+  setWsStatus('connecting');
+  ws = new WebSocket(getWsUrl());
+
+  ws.onopen = () => {
+    setWsStatus('ok');
+    clearTimeout(reconnectTimer);
+    if (onOpen) onOpen();
+  };
+
+  ws.onclose = () => {
+    setWsStatus('err');
+    reconnectTimer = setTimeout(() => {
+      if (currentRoom) connectWs(() => wsSend({ event: 'join', roomId: currentRoom.id, nick: currentNick }));
+    }, 3000);
+  };
+
+  ws.onerror = () => setWsStatus('err');
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.event === 'joined') await onJoined(msg);
+    else if (msg.event === 'message') await onMessage(msg);
+    else if (msg.event === 'member_join') onMemberChange(msg);
+    else if (msg.event === 'member_leave') onMemberChange(msg);
+    else if (msg.event === 'destroyed') onDestroyed(msg);
+    else if (msg.event === 'kicked') onKicked();
+    else if (msg.event === 'error') toast(msg.message, 'error');
+  };
+}
+
+function wsSend(obj) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+}
+
+function setWsStatus(s) {
+  const el = document.getElementById('ws-status');
+  if (!el) return;
+  el.className = 'ws-status ' + s;
+  el.textContent = s === 'ok' ? '已连接' : s === 'err' ? '连接断开' : '连接中';
+}
+
+// ── WS Event handlers ────────────────────────────────────────────────────────
+async function onJoined(msg) {
+  currentRoom = msg.room;
+  renderChatUI();
+  renderMembers(msg.members);
+  addSysMsg('加入成功 · 消息由 AES-256-GCM 加密，服务器仅存密文');
+  for (const m of (msg.messages || [])) {
+    const text = await ENC.decrypt(m.enc, currentPassword, currentRoom.id);
+    renderMessage({ ...m, text });
+  }
+  scrollBottom();
+}
+
+async function onMessage(msg) {
+  const text = await ENC.decrypt(msg.enc, currentPassword, currentRoom.id);
+  renderMessage({ ...msg, text });
+  scrollBottom();
+}
+
+function onMemberChange(msg) {
+  if (msg.event === 'member_join') addSysMsg(`${esc(msg.nick)} 加入了房间`);
+  else addSysMsg(`${esc(msg.nick)} 离开了房间`);
+  renderMembers(msg.members);
+}
+
+function onDestroyed(msg) {
+  toast('房间已被销毁', 'error');
+  setTimeout(() => goLobby(), 1000);
+}
+
+function onKicked() {
+  toast('你已被房主踢出', 'error');
+  setTimeout(() => goLobby(), 1000);
+}
+
+// ── Lobby ────────────────────────────────────────────────────────────────────
+async function loadLobby() {
+  try {
+    const res = await fetch('/api/lobby');
+    const rooms = await res.json();
+    renderLobby(rooms);
+  } catch { renderLobby([]); }
+}
+
+function renderLobby(rooms) {
+  const c = document.getElementById('lobby-rooms');
+  if (!rooms.length) {
+    c.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--ink3);padding:40px;font-size:14px">🍃<br><br>暂无公开房间，创建一个邀请朋友来聊</div>';
+    return;
+  }
+  c.innerHTML = rooms.map(r => `
+    <div class="room-card" onclick="openJoinFromLobby('${esc(r.id)}')">
+      <div class="room-badge">${r.mode === 'destroy' ? '聊完即删' : '保留记录'}</div>
+      <div class="room-name">${esc(r.name)}</div>
+      ${r.desc ? `<div style="font-size:13px;color:var(--ink3);margin-bottom:6px">${esc(r.desc)}</div>` : ''}
+      <div class="room-meta">
+        <span>🟢 ${r.memberCount} 人在线</span>
+        <span style="font-family:var(--font-mono);font-size:11px">${r.id}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function goLobby() {
+  if (ws && ws.readyState === 1 && currentRoom) {
+    wsSend({ event: 'leave', roomId: currentRoom.id, nick: currentNick });
+  }
+  currentRoom = null; currentNick = null; currentPassword = null; isHost = false;
+  showScreen('lobby-screen');
+  loadLobby();
+}
+
+// ── Create / Join ────────────────────────────────────────────────────────────
+function openCreateModal() { document.getElementById('create-modal').classList.add('open'); }
+function openJoinModal() { document.getElementById('join-modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openJoinFromLobby(id) { document.getElementById('join-room-id').value = id; openJoinModal(); }
+
+function selectMode(v) {
+  document.getElementById('mode-keep-label').classList.toggle('selected', v === 'keep');
+  document.getElementById('mode-destroy-label').classList.toggle('selected', v === 'destroy');
+}
+function selectVis(v) {
+  document.getElementById('vis-public-label').classList.toggle('selected', v === 'public');
+  document.getElementById('vis-hidden-label').classList.toggle('selected', v === 'hidden');
+}
+
+async function createRoom() {
+  const nick = document.getElementById('create-nickname').value.trim() || '偷闲者';
+  const name = document.getElementById('create-room-name').value.trim();
+  const password = document.getElementById('create-password').value;
+  const desc = document.getElementById('create-desc').value.trim();
+  const mode = document.querySelector('input[name="rec-mode"]:checked').value;
+  const visibility = document.querySelector('input[name="vis-mode"]:checked').value;
+  if (!name) { toast('请填写房间名称', 'error'); return; }
+  if (password.length < 4) { toast('密码至少4位', 'error'); return; }
+
+  try {
+    const res = await fetch('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, desc, mode, visibility, hostNick: nick })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || '创建失败', 'error'); return; }
+    closeModal('create-modal');
+    currentNick = nick; currentPassword = password; isHost = true;
+    connectWs(() => wsSend({ event: 'join', roomId: data.roomId, nick }));
+    showScreen('chat-screen');
+  } catch (e) { toast('网络错误', 'error'); }
+}
+
+async function joinRoom() {
+  const nick = document.getElementById('join-nickname').value.trim() || '偷闲者';
+  const roomId = document.getElementById('join-room-id').value.trim().toUpperCase();
+  const password = document.getElementById('join-password').value;
+  if (!roomId) { toast('请填写房间ID', 'error'); return; }
+  if (!password) { toast('请填写密码', 'error'); return; }
+
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`);
+    if (!res.ok) { toast('房间不存在或已销毁', 'error'); return; }
+    const room = await res.json();
+    isHost = room.hostNick === nick;
+    closeModal('join-modal');
+    currentNick = nick; currentPassword = password;
+    connectWs(() => wsSend({ event: 'join', roomId, nick }));
+    showScreen('chat-screen');
+  } catch { toast('网络错误', 'error'); }
+}
+
+// ── Chat UI ──────────────────────────────────────────────────────────────────
+function renderChatUI() {
+  const r = currentRoom;
+  document.getElementById('room-title').textContent = r.name;
+  document.getElementById('room-id-display').textContent = 'ID: ' + r.id + ' — 点击复制链接';
+  document.getElementById('chat-room-name').textContent = r.name;
+  document.getElementById('chat-room-status').textContent =
+    (r.mode === 'destroy' ? '聊完即删' : '保留记录') + ' · 🔐 AES-256-GCM 加密';
+  document.getElementById('destroy-btn').style.display = isHost ? '' : 'none';
+  document.getElementById('messages').innerHTML = '';
+}
+
+function renderMembers(members) {
+  const list = document.getElementById('member-list');
+  list.innerHTML = (members || []).map(m => `
+    <div class="member-item">
+      <div class="member-avatar">${initials(m.nick)}</div>
+      <div class="member-name">${esc(m.nick)}${m.isHost ? '<span class="host-tag">房主</span>' : ''}</div>
+    </div>
+  `).join('');
+}
+
+function renderMessage(msg) {
+  const msgs = document.getElementById('messages');
+  const isSelf = msg.sender === currentNick;
+  const div = document.createElement('div');
+  div.className = 'msg' + (isSelf ? ' self' : '');
+  let bubble = '';
+  if (msg.type === 'image') {
+    bubble = `<div class="msg-bubble"><img src="${msg.text}" alt="图片" loading="lazy"></div>`;
+  } else {
+    bubble = `<div class="msg-bubble">${esc(msg.text).replace(/\n/g, '<br>')}</div>`;
+  }
+  div.innerHTML = `
+    <div class="msg-avatar">${initials(msg.sender)}</div>
+    <div class="msg-body">
+      <div class="msg-meta">${esc(msg.sender)} · ${msg.time}</div>
+      ${bubble}
+    </div>`;
+  msgs.appendChild(div);
+}
+
+function addSysMsg(text) {
+  const msgs = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = 'sys-msg';
+  d.innerHTML = `<span>${text}</span>`;
+  msgs.appendChild(d);
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+// ── Send ─────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  if (!currentRoom) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  const imgEl = document.querySelector('#img-preview-area img');
+  if (!text && !imgEl) return;
+
+  const timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+  if (imgEl) {
+    const dataUrl = imgEl.src;
+    document.getElementById('img-preview-area').innerHTML = '';
+    const enc = await ENC.encrypt(dataUrl, currentPassword, currentRoom.id);
+    wsSend({ event: 'message', roomId: currentRoom.id, nick: currentNick, enc, type: 'image', time: timeStr });
+  }
+  if (text) {
+    input.value = ''; autoResize(input);
+    const enc = await ENC.encrypt(text, currentPassword, currentRoom.id);
+    wsSend({ event: 'message', roomId: currentRoom.id, nick: currentNick, enc, type: 'text', time: timeStr });
+  }
+}
+
+function handleInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function insertEmoji(e) { const i = document.getElementById('chat-input'); i.value += e; i.focus(); }
+
+function handleImageSelect(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('img-preview-area').innerHTML =
+      `<div class="img-preview"><img src="${ev.target.result}"><button class="img-preview-remove" onclick="clearImg()">✕</button></div>`;
+  };
+  r.readAsDataURL(file);
+  e.target.value = '';
+}
+function clearImg() { document.getElementById('img-preview-area').innerHTML = ''; }
+
+// ── Room actions ─────────────────────────────────────────────────────────────
+function copyRoomLink() {
+  if (!currentRoom) return;
+  const url = `${location.origin}${location.pathname}?room=${currentRoom.id}`;
+  navigator.clipboard.writeText(url)
+    .then(() => toast('链接已复制！'))
+    .catch(() => toast('房间 ID: ' + currentRoom.id));
+}
+
+function confirmDestroy() { document.getElementById('destroy-modal').classList.add('open'); }
+function doDestroy() {
+  wsSend({ event: 'destroy', roomId: currentRoom.id, nick: currentNick });
+  closeModal('destroy-modal');
+}
+
+function leaveRoom() {
+  wsSend({ event: 'leave', roomId: currentRoom.id, nick: currentNick });
+  currentRoom = null; currentNick = null; currentPassword = null; isHost = false;
+  showScreen('lobby-screen');
+  loadLobby();
+}
+
+// ── Boss Mode ────────────────────────────────────────────────────────────────
+function enterBossMode() { document.body.classList.add('boss-mode'); }
+function exitBossMode() { document.body.classList.remove('boss-mode'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') exitBossMode(); });
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function initials(n) { n = String(n || '?'); return (n.length > 1 ? n[0] + n[n.length - 1] : n[0]).toUpperCase(); }
+function toast(msg, type = '') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const urlRoom = new URLSearchParams(location.search).get('room');
+if (urlRoom) {
+  document.getElementById('join-room-id').value = urlRoom;
+  openJoinModal();
+}
+loadLobby();
+</script>
+</body>
+</html>
